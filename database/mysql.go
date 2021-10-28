@@ -103,6 +103,12 @@ func (conn *MysqlConn) PrintConf() {
 	boldWhite := whilte.Add(color.BgGreen)
 	boldWhite.Print(conn.Info.Ip)
 	fmt.Println()
+	boldWhite.Print(conn.Info.Port)
+	fmt.Println()
 	boldWhite.Print(conn.Info.User)
+	fmt.Println()
+	boldWhite.Print(conn.Info.Passwd)
+	fmt.Println()
+	boldWhite.Print(conn.Info.Db)
 	fmt.Println()
 }

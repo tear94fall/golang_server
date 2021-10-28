@@ -11,7 +11,10 @@ import (
 func main() {
 	printStartMsg()
 
-	r := SetupRouter()
+	mysql := database.InitMysqlConn()
+	defer mysql.Conn.Close()
+
+	r := SetupRouter(mysql)
 	r.Run()
 }
 
@@ -29,10 +32,10 @@ func printStartMsg() {
 	fmt.Print(string(colorReset))
 }
 
-func SetupRouter() *gin.Engine {
+func SetupRouter(mysql *database.MysqlConn) *gin.Engine {
 	r := gin.Default()
 
-	r.Use(MiddleMysql())
+	r.Use(MiddleMysql(mysql))
 
 	r.POST("/api/v1/login", server.Login)
 	r.POST("/api/v1/register", server.Register)
@@ -40,16 +43,14 @@ func SetupRouter() *gin.Engine {
 	return r
 }
 
-// Middleware
-func MiddleMysql() gin.HandlerFunc {
+// Mysql Middleware
+func MiddleMysql(mysql *database.MysqlConn) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		db := database.InitMysqlConn()
-
-		if db == nil {
+		if mysql == nil {
 			panic("init mysql database conn fail")
 		}
 
-		c.Set("mysql", db)
+		c.Set("mysql", mysql)
 		c.Next()
 	}
 }
