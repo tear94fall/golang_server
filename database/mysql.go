@@ -28,6 +28,10 @@ type MysqlInfo struct {
 
 func InitMysqlConn() *MysqlConn {
 	confFile := os.Getenv("DBCONF")
+	if confFile == "" {
+		return nil
+	}
+
 	conn := &MysqlConn{}
 	conn.ReadConfFile(confFile)
 	conn.PrintConf()
@@ -37,8 +41,9 @@ func InitMysqlConn() *MysqlConn {
 
 	info := conn.Info.User + ":" + conn.Info.Passwd + "@tcp(" + conn.Info.Ip + ")/" + conn.Info.Db
 	db, err := sql.Open("mysql", info)
-	if err != nil {
-		panic(err)
+	if err != nil || db.Ping() != nil {
+		fmt.Println("database connection error")
+		panic(err.Error())
 	}
 
 	// Set db conn

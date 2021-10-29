@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type RegisterRequestData struct {
+type UpdateRequestData struct {
 	Email  string `id:"email"`
 	Passwd string `passwd:"passwd"`
 	Name   string `name:"name"`
@@ -17,8 +17,8 @@ type RegisterRequestData struct {
 	Tel    string `tel:"tel"`
 }
 
-func Register(c *gin.Context) {
-	data := &RegisterRequestData{}
+func Update(c *gin.Context) {
+	data := &UpdateRequestData{}
 
 	err := c.ShouldBind(&data)
 	if err != nil {
@@ -29,9 +29,8 @@ func Register(c *gin.Context) {
 
 	Db, _ := c.MustGet("mysql").(*database.MysqlConn)
 
-	err = RegisterQuery(Db.Conn, data)
+	err = UpdateQuery(Db.Conn, data)
 	if err != nil {
-		fmt.Println(err)
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "not found",
 		})
@@ -44,19 +43,19 @@ func Register(c *gin.Context) {
 	})
 }
 
-func RegisterQuery(conn *sql.DB, data *RegisterRequestData) error {
-	registerQeury := "INSERT INTO member (email, passwd, name, age, tel) VALUES (?, ?, ?, ?, ?)"
-	stmt, err := conn.Prepare(registerQeury)
+func UpdateQuery(conn *sql.DB, data *UpdateRequestData) error {
+	UpdateQuery := "UPDATE member SET name=?, age=?, tel=? WHERE email=?"
+	stmt, err := conn.Prepare(UpdateQuery)
 
 	if err != nil {
-		return fmt.Errorf("prepare query fail : [%s] error $%v", registerQeury, err)
+		return fmt.Errorf("prepare query fail : [%s] error $%v", UpdateQuery, err)
 	}
 
-	_, err = stmt.Exec(data.Email, data.Passwd, data.Name, data.Age, data.Tel)
+	_, err = stmt.Exec(data.Name, data.Age, data.Tel, data.Email)
 	defer stmt.Close()
 
 	if err != nil {
-		return fmt.Errorf("execute query fail : [%s] error $%v", registerQeury, err)
+		return fmt.Errorf("execute query fail : [%s] error $%v", UpdateQuery, err)
 	}
 
 	return nil
