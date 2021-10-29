@@ -12,6 +12,10 @@ func main() {
 	printStartMsg()
 
 	mysql := database.InitMysqlConn()
+	if mysql == nil {
+		panic(fmt.Errorf("cannot read database conf file"))
+	}
+
 	defer mysql.Conn.Close()
 
 	r := SetupRouter(mysql)
@@ -39,6 +43,7 @@ func SetupRouter(mysql *database.MysqlConn) *gin.Engine {
 
 	r.POST("/api/v1/login", server.Login)
 	r.POST("/api/v1/register", server.Register)
+	r.POST("/api/v1/update", server.Update)
 
 	return r
 }

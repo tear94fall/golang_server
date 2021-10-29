@@ -1,8 +1,8 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
-	"log"
 	"main/database"
 	"net/http"
 
@@ -26,8 +26,7 @@ func Login(c *gin.Context) {
 	}
 
 	Db, _ := c.MustGet("mysql").(*database.MysqlConn)
-	loginQuery := fmt.Sprintf("SELECT email, passwd FROM member WHERE email = \"%s\" and passwd = \"%s\"", data.Email, data.Passwd)
-	err = LoginQuery(Db, loginQuery)
+	err = LoginQuery(Db.Conn, data)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"message": "not found",
@@ -41,30 +40,27 @@ func Login(c *gin.Context) {
 	})
 }
 
-func LoginQuery(conn *database.MysqlConn, query string) error {
+func LoginQuery(conn *sql.DB, data *LoginRequestData) error {
 	m := &database.Member{}
 
-	rows, err := conn.Conn.Query(query)
+	LoginQuery := "SELECT email, passwd FROM member WHERE email = ? and passwd = ?"
+	stmt, err := conn.Prepare(LoginQuery)
+
 	if err != nil {
-		log.Printf("run query fail : [%s] error $%v", query, err)
-		return fmt.Errorf("run query fail : [%s] error $%v", query, err)
+		return fmt.Errorf("prepare query fail : [%s] error $%v", LoginQuery, err)
 	}
-	defer rows.Close()
 
-	count := 0
+	err = stmt.QueryRow(data.Email, data.Passwd).Scan(&m.Email, &m.Passwd)
+	defer stmt.Close()
 
-	for rows.Next() {
-		err := rows.Scan(&m.Email, &m.Passwd)
-		if err != nil {
-			log.Fatal(err)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("no row in databases. query : %s", LoginQuery)
 		}
-		m.PrintMember()
-		count += 1
 	}
 
-	if count == 0 {
-		log.Printf("login fail")
-		return fmt.Errorf("login fail")
+	if m.Email == "" || m.Passwd == "" {
+		return fmt.Errorf("Login Fail. email : %s, passwd : %s", m.Email, m.Passwd)
 	}
 
 	return nil
