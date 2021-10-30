@@ -44,6 +44,7 @@ func SetupRouter(mysql *database.MysqlConn) *gin.Engine {
 	r.POST("/api/v1/login", server.Login)
 	r.POST("/api/v1/register", server.Register)
 	r.POST("/api/v1/update", server.Update)
+	r.POST("/api/v1/delete", server.Delete)
 
 	return r
 }
