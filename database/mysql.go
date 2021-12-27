@@ -2,9 +2,11 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"main/status"
 	"os"
 	"time"
 
@@ -26,24 +28,24 @@ type MysqlInfo struct {
 	Passwd string `yaml:"passwd"`
 }
 
-func InitMysqlConn() *MysqlConn {
+func InitMysqlConn() (*MysqlConn, error) {
 	confFile := os.Getenv("DBCONF")
 	if confFile == "" {
-		return nil
+		return nil, errors.New(status.GetErrMsg(status.MysqlEnvVarNotSet))
 	}
 
 	conn := &MysqlConn{}
 	conn.ReadConfFile(confFile)
 	conn.PrintConf()
 	if conn.Info == nil {
-		return nil
+		return nil, errors.New(status.GetErrMsg(status.MysqlConfFileNotExist))
 	}
 
 	info := conn.Info.User + ":" + conn.Info.Passwd + "@tcp(" + conn.Info.Ip + ")/" + conn.Info.Db
 	db, err := sql.Open("mysql", info)
 	if err != nil || db.Ping() != nil {
 		fmt.Println("database connection error")
-		panic(err.Error())
+		return nil, errors.New(status.GetErrMsg(status.MysqlConnFail))
 	}
 
 	// Set db conn
@@ -53,7 +55,16 @@ func InitMysqlConn() *MysqlConn {
 
 	conn.Conn = db
 
-	return conn
+	return conn, nil
+}
+
+func (conn *MysqlConn) CloseMysqlConn() error {
+	if conn.Conn != nil {
+		conn.Conn.Close()
+		return nil
+	}
+
+	return fmt.Errorf("mysql connection close error")
 }
 
 func (conn *MysqlConn) ReadConfFile(filename string) error {
@@ -68,7 +79,7 @@ func (conn *MysqlConn) ReadConfFile(filename string) error {
 
 	if err != nil {
 		log.Printf("yaml file bind fail : [%s] error #%v", filename, err)
-		panic(err)
+		return nil
 	}
 
 	return nil
@@ -104,16 +115,18 @@ func (conn *MysqlConn) RunQuery(query string) error {
 }
 
 func (conn *MysqlConn) PrintConf() {
-	whilte := color.New(color.FgWhite)
-	boldWhite := whilte.Add(color.BgGreen)
-	boldWhite.Print(conn.Info.Ip)
-	fmt.Println()
-	boldWhite.Print(conn.Info.Port)
-	fmt.Println()
-	boldWhite.Print(conn.Info.User)
-	fmt.Println()
-	boldWhite.Print(conn.Info.Passwd)
-	fmt.Println()
-	boldWhite.Print(conn.Info.Db)
-	fmt.Println()
+	if conn.Info != nil {
+		whilte := color.New(color.FgWhite)
+		boldWhite := whilte.Add(color.BgGreen)
+		boldWhite.Print(conn.Info.Ip)
+		fmt.Println()
+		boldWhite.Print(conn.Info.Port)
+		fmt.Println()
+		boldWhite.Print(conn.Info.User)
+		fmt.Println()
+		boldWhite.Print(conn.Info.Passwd)
+		fmt.Println()
+		boldWhite.Print(conn.Info.Db)
+		fmt.Println()
+	}
 }

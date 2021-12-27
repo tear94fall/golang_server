@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"main/database"
 	"main/server"
+	"main/utility"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,9 +12,12 @@ import (
 func main() {
 	printStartMsg()
 
-	mysql := database.InitMysqlConn()
+	mysql, err := database.InitMysqlConn()
 	if mysql == nil {
-		panic(fmt.Errorf("cannot read database conf file"))
+		utility.CmdClear()
+		printFailMsg()
+		fmt.Println(err)
+		return
 	}
 
 	defer mysql.Conn.Close()
@@ -33,6 +37,20 @@ func printStartMsg() {
 	fmt.Println("  / /_/ / /_/ /   ___/ /  __/ /   | |/ /  __/ /           ")
 	fmt.Println("  \\____/\\____/   /____/\\___/_/    |___/\\___/_/        ")
 	fmt.Println("                                                          ")
+	fmt.Print(string(colorReset))
+}
+
+func printFailMsg() {
+	colorReset := "\033[0m"
+	colorRed := "\033[31m"
+
+	fmt.Print(string(colorRed))
+	fmt.Println("     _____                              ____                 ______      _ __     ")
+	fmt.Println("    / ___/___  ______   _____  _____   / __ \\__  ______     / ____/___ _(_) /    ")
+	fmt.Println("    \\__ \\/ _ \\/ ___/ | / / _ \\/ ___/  / /_/ / / / / __ \\   / /_  / __ `/ / / ")
+	fmt.Println("   ___/ /  __/ /   | |/ /  __/ /     / _, _/ /_/ / / / /  / __/ / /_/ / / /      ")
+	fmt.Println("  /____/\\___/_/    |___/\\___/_/     /_/ |_|\\__,_/_/ /_/  /_/    \\__,_/_/_/   ")
+	fmt.Println("                                                                                 ")
 	fmt.Print(string(colorReset))
 }
 
